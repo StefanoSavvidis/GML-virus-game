@@ -1,0 +1,32 @@
+path = path_add() // Create
+
+// CREATE EVENT//
+
+//enemy variables
+redHealth = 6
+originalX = x
+originalY = y
+enemyState = "roaming"
+pathCounter = 0
+
+listenRange = 400
+siteRange = 1000
+siteSize = 120
+
+countValue = 0
+
+doorOpened = false
+openDoorTime = 2
+openDoorTimer = 0
+
+seePlayer = false
+seePlayerTime = 0.25
+seePlayerTimer = 0
+
+checkDirectionTime = 1
+checkDirectionCounter = 0
+
+playerX = 0
+playerY = 0
+
+lastShot = 60

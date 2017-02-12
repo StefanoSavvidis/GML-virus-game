@@ -1,0 +1,253 @@
+/// Enemy Control // STEP //
+
+// STEP EVENT //
+
+/* Moving */
+enemySpeed = 120/room_speed
+runSpeed = 160/room_speed
+hitWall = false
+facing = image_angle
+invincible = false
+
+if(image_angle > 360){
+    image_angle -= 360
+} else if (image_angle <= 0) {
+    image_angle += 360
+}
+
+image_angle = direction
+
+if ((distance_to_object(oPlayer) < listenRange) && oPlayer.lastShot == 0 && enemyState != "openDoor") {
+    playerX = oPlayer.x//(oPlayer.x div 32) * 32
+    playerY = oPlayer.y//(oPlayer.y div 32) * 32
+
+    pathCounter = 0
+
+    enemyState = "searching"
+}
+
+goPlayer = true
+if seePlayer = true {
+    seePlayerTimer += 1/room_speed
+}
+if i_have_line_of_sight_to(oPlayer,siteRange,siteSize){
+
+    seePlayer = true
+
+    if doorOpened == false
+    {
+        enemyState = "openDoor"
+        pathCounter = 0
+        playerX = oPlayer.x//(oPlayer.x div 32) * 32
+        playerY = oPlayer.y//(oPlayer.y div 32) * 32
+
+    }
+
+    if doorOpened == true
+    {
+        enemyState = "chase"
+        pathCounter = 0
+        goPlayer = false
+        playerX = oPlayer.x//(oPlayer.x div 32) * 32
+        playerY = oPlayer.y//(oPlayer.y div 32) * 32
+    }
+    /*
+    if instance_exists(oWhite){
+        if oWhite.cellFree == true{
+            oWhite.cellState = "chase"
+            oWhite.goPlayer = true
+            oWhite.playerX = playerX
+            oWhite.playerY = playerY
+            oWhite.pathCounter = 1
+        }
+    }
+    */
+
+}
+if enemyState == "openDoor" {
+
+    invincible = true
+    if seePlayerTimer >= seePlayerTime
+    {
+        speed = runSpeed
+
+        if pathCounter == 0{
+            if (mp_grid_path(global.grid, path, x, y, oSwitch.x + 24, oSwitch.y, 1)) {
+                path_start(path, speed, path_action_stop, true)
+            }
+        }
+
+        pathCounter += 1
+
+        if distance_to_point(oSwitch.x + 5, oSwitch.y) < 15 {
+
+            openDoorTimer += 1/room_speed
+            image_angle = point_direction(x,y,oSwitch.x,oSwitch.y)
+            speed = 0
+
+            if openDoorTimer >= openDoorTime {
+                /*
+                oWhite.cellFree = true
+                oWhite.cellState = "chase"
+                oWhite.goPlayer = true
+                oWhite.playerX = playerX
+                oWhite.playerY = playerY
+                oWhite.pathCounter = 0
+                */
+                if instance_exists(oWhite){
+                   oWhite.redChasing = true
+                }
+                global.destroyNumber = countValue
+
+                doorOpened = true
+                enemyState = "searching"
+                pathCounter = 0
+                openDoorTimer = 0
+            }
+        }
+    }
+    speed = 0
+
+}
+if enemyState == "chase" {
+
+    speed = runSpeed
+    /*
+
+    */
+
+    if pathCounter == 1 && goPlayer == true{
+        if (mp_grid_path(global.grid, path, x, y, playerX, playerY, 1)) {
+            path_start(path, speed, path_action_stop, true)
+        }
+    } else {
+        speed = 0
+    }
+    pathCounter += 1
+
+
+
+    if i_have_line_of_sight_to(oPlayer,siteRange,siteSize) == false {
+        enemyState = "searching"
+    }
+
+    if (lastShot >= 15) && goPlayer == false{
+        path_end()
+        direction = point_direction(x,y,playerX,playerY)
+        myBullet = instance_create(x,y,oSlowBullet)
+        myBullet.direction = point_direction(x,y,playerX,playerY)
+        myBullet.speed = 1000/room_speed
+        myBullet.facing = myBullet.direction
+        lastShot = 0
+    }
+
+    if distance_to_point(playerX,playerY) < 15 { //(x == playerX && y == playerY) {
+        enemyState = "lookaround"
+        pathCounter = 0
+    }
+}
+
+lastShot += 60/room_speed
+
+if enemyState == "roaming" {
+
+    speed = enemySpeed
+
+    if pathCounter == 0 {
+        if instance = "1_1" {
+            path_start(pEnemy1_1, speed, path_action_continue, 0)
+        } else if instance = "1_2"{
+            path_start(pEnemy1_2, speed, path_action_continue, 0)
+        }
+    }
+
+    pathCounter += 1
+
+
+}
+if enemyState == "searching"{
+
+    speed = runSpeed
+
+
+
+    if pathCounter == 0 {
+        if (mp_grid_path(global.grid, path, x, y, playerX, playerY, 1)) {
+            path_start(path, speed, path_action_stop, true)
+        }
+    }
+
+    pathCounter += 1
+
+    if distance_to_point(playerX,playerY) < 15 { //(x == playerX && y == playerY) {
+        enemyState = "lookaround"
+        pathCounter = 0
+    }
+
+}
+if enemyState == "lookaround" {
+    if ((direction % 90) != 0) {
+        direction += (90 - (direction % 90))
+    }
+    if pathCounter == 0 {
+        originalDirection = direction
+    }
+
+    pathCounter += 1
+    speed = 0
+
+    checkDirectionCounter += 1/room_speed
+
+    if (checkDirectionCounter >= checkDirectionTime) {
+        direction += 90
+        if (direction == originalDirection) {
+            pathCounter = 0
+            enemyState = "getback"
+        }
+        checkDirectionCounter = 0
+    }
+}
+if enemyState == "getback" {
+
+    speed = enemySpeed
+
+    if pathCounter == 0 {
+        if (mp_grid_path(global.grid, path, x, y, originalX, originalY, 1)){
+            path_start(path, speed, path_action_stop, true)
+        }
+    }
+
+    pathCounter += 1
+
+    if(x == originalX && y == originalY){
+        pathCounter = 0
+        enemyState = "roaming"
+    }
+}
+
+/* Damage */
+
+incomingBullet = instance_place(x,y,oBullet)
+
+if instance_exists(incomingBullet) {
+    with incomingBullet {
+        instance_destroy()
+    }
+    if invincible == false {
+        redHealth -= 1
+    }
+}
+
+if redHealth <= 0 {
+        instance_destroy()
+}
+if enemyState == "openDoor" {
+
+
+    if seePlayerTimer < seePlayerTime
+    {
+        path_end()
+        speed = 0
+    }
+
+}

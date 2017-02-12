@@ -1,0 +1,150 @@
+/// Cell Control
+
+
+
+/* Moving */
+cellWalkSpeed = 150/room_speed
+cellRunSpeed = 200/room_speed
+hitWall = false
+
+
+facing = image_angle
+
+if(image_angle > 360){
+    image_angle -= 360
+} else if (image_angle <= 0) {
+    image_angle += 360
+}
+
+image_angle = direction
+
+if ((distance_to_object(oPlayer) < listenRange) && oPlayer.lastShot == 0) && cellFree == true {
+    playerX = oPlayer.x//(oPlayer.x div 32) * 32
+    playerY = oPlayer.y//(oPlayer.y div 32) * 32
+
+    pathCounter = 0
+
+    cellState = "searching"
+}
+
+goPlayer = true
+
+
+inSite = false
+if i_have_line_of_sight_to(oPlayer,siteRange,siteSize) && cellFree == true{
+    inSite = true
+    cellState = "chase"
+    playerX = oPlayer.x//(oPlayer.x div 32) * 32
+    playerY = oPlayer.y//(oPlayer.y div 32) * 32
+    goPlayer = false
+    pathCounter = 0
+}
+
+if cellState == "chase" {
+
+    speed = cellRunSpeed
+
+    with oDoor {
+        if oDoor.countValue == 1{
+            instance_destroy()
+        }
+    }
+
+    if pathCounter == 1 && goPlayer == true{
+        if (mp_grid_path(global.grid, path, x, y, playerX, playerY, 1)) {
+            path_start(path, speed, path_action_stop, true)
+        }
+    } else {
+        speed = 0
+    }
+
+    pathCounter += 1
+
+
+    if (lastShot >= 20) && goPlayer == false{
+        path_end()
+        direction = point_direction(x,y,playerX,playerY)
+        myBullet = instance_create(x,y,oLethalBullet)
+        myBullet.direction = point_direction(x,y,playerX,playerY)
+        myBullet.speed = 1000/room_speed
+        myBullet.facing = myBullet.direction
+        lastShot = 0
+    }
+
+    if distance_to_point(playerX,playerY) < 15 && inSite = false{ //(x == playerX && y == playerY) {
+       cellState = "goStation"
+        pathCounter = 0
+    }
+}
+
+lastShot += 60/room_speed
+
+if cellState == "idle" {
+    speed = 0
+
+
+
+    if redChasing == true {
+        with (oDoor){
+            instance_destroy()
+        }
+        pathCounter = 0
+        cellState = "goStation"
+        oGrid.updateGrid = true
+    }
+
+
+    pathCounter += 1
+}
+if cellState == "goStation" {
+    if pathCounter == 5 {
+        if (mp_grid_path(global.grid, path, x, y, oStation.x, oStation.y, 1)) {
+            speed = cellWalkSpeed
+            path_start(path, speed, path_action_stop, true)
+        }
+    }
+    pathCounter += 1
+    cellFree = true
+    if (x == oStation.x && y == oStation.y) { //(x == playerX && y == playerY) {
+        cellState = "stationed"
+        pathCounter = 0
+        onStation = instance_position(x,y,oStation)
+    }
+
+
+}
+if cellState == "searching"{
+
+    speed = cellRunSpeed
+
+    if pathCounter == 0 {
+        if (mp_grid_path(global.grid, path, x, y, playerX, playerY, 1)) {
+            path_start(path, speed, path_action_stop, true)
+        }
+    }
+
+    pathCounter += 1
+
+    if distance_to_point(playerX,playerY) < 16 { //(x == playerX && y == playerY) {
+        cellState = "goStation"
+        pathCounter = 0
+    }
+
+}
+if cellState == "stationed" {
+    pathCounter += 1
+    direction = oStation.image_angle
+    speed = 0
+}
+incomingBullet = instance_place(x,y,oBullet)
+
+if instance_exists(incomingBullet) {
+    with incomingBullet {
+        instance_destroy()
+    }
+
+    cellHealth -= 1
+}
+if cellHealth <= 0 {
+    instance_destroy()
+}
